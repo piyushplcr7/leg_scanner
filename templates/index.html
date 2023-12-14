@@ -7,11 +7,71 @@
     <title>Barcode Reader</title>
 </head>
 
+<style>
+    #camera {
+        width: 100%;
+        height: 30vh;
+        object-fit: cover;
+        object-position: center top;
+    }
+
+    #result {
+        width: 80vw;
+        /* Set the desired width */
+        height: 60px;
+        /* Set the desired height */
+        background-color: lightgray;
+        /* Set the background color */
+        color: black;
+        /* Set the text color */
+        padding: 20px;
+        /* Set padding to create some space inside the element */
+        border: 1px solid gray;
+        /* Add a border for visual separation */
+        display: flex;
+        align-items: center;
+        /* Center vertically */
+        justify-content: center;
+        /* Center horizontally */
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, 0%);
+    }
+
+    #ScanButton,
+    #StopButton {
+        width: calc(50% - 10px);
+        /* Set half the width of the container with spacing */
+        height: 50px;
+        background-color: darkblue;
+        color: white;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+        margin: 10px;
+    }
+
+    #ScanButton:hover,
+    #StopButton:hover {
+        background-color: navy;
+        /* Change color on hover if desired */
+    }
+
+    #buttonContainer {
+        display: flex;
+        justify-content: space-between;
+        /* Adjust as needed */
+    }
+</style>
+
 <body>
     <h1>Legi-Scanner</h1>
-    <video id="camera" width="1920" height="1080" autoplay></video>
-    <button id="ScanButton" onclick="StartScan()">Scan</button>
-    <button id="StopButton" onclick="StopScan()">Stop</button>
+    <!-- <video id="camera" width="1920" height="1080" autoplay></video> -->
+    <video id="camera" width="100%" height="100%" autoplay playsinline></video>
+    <div id="buttonContainer">
+        <button id="ScanButton" onclick="StartScan()">Scan</button>
+        <button id="StopButton" onclick="StopScan()">Stop</button>
+    </div>
     <!-- <form id="uploadForm" enctype="multipart/form-data">
         <label for="fileInput">Select an image with barcode:</label>
         <input type="file" id="fileInput" name="file" accept="image/*">
@@ -31,14 +91,37 @@
     type="text/javascript"></script>
 
 <script>
+    debugstatsDiv = document.getElementById('debugstats');
     resultDiv = document.getElementById('result');
     var resultdata;
     const detectedBarcodeCallback = function (data) {
         console.log('Barcode detected!');
         console.log(data);
         resultdata = data;
-        resultDiv.innerHTML = data["codeResult"]["code"];
+        var decodedBarcode = data["codeResult"]["code"];
+        resultDiv.innerHTML = decodedBarcode;
         Quagga.stop();
+
+        //debugstatsDiv.innerHTML = decodedBarcode;
+
+        var postDataBody = { 'legi_nr': decodedBarcode };
+
+        // Send the decodedBarcode to the server
+        fetch('/leginr', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' // Set the content type to JSON
+            },
+            body: JSON.stringify(postDataBody) // Serialize the data as JSON
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                resultDiv.innerHTML = decodedBarcode + ", " + data['first_name'] + " " + data['last_name'];
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            });
     };
 
     const onProcessedCallback = function (data) {
@@ -49,18 +132,37 @@
     const video = document.getElementById('camera');
 
 
-    debugstatsDiv = document.getElementById('debugstats');
-    //debugstatsDiv.innerHTML = 'ubs';
 
-    navigator.mediaDevices.getUserMedia({ video: true })
+
+
+    const constraintsBackCamera = {
+        video: {
+            facingMode: { exact: 'environment' } // 'environment' for back camera
+        }
+    };
+
+    const constraintsDefault = {
+        video: true
+    };
+
+    navigator.mediaDevices.getUserMedia(constraintsBackCamera)
         .then(stream => {
             video.srcObject = stream;
-            //debugstatsDiv.innerHTML = 'stream';
         })
-        .catch((error) => {
-            console.error('Error accessing camera:', error);
-            debugstatsDiv.innerHTML = 'Error';
+        .catch((backCameraError) => {
+            console.error('Error accessing back camera:', backCameraError);
+
+            // If accessing back camera fails, try the default constraints
+            navigator.mediaDevices.getUserMedia(constraintsDefault)
+                .then(defaultStream => {
+                    video.srcObject = defaultStream;
+                })
+                .catch((defaultError) => {
+                    console.error('Error accessing camera with default constraints:', defaultError);
+                    debugstatsDiv.innerHTML = 'Error';
+                });
         });
+
 
     function StartScan() {
         resultDiv.innerHTML = 'Scanning';
