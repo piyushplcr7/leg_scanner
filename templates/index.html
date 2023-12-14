@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Reader</title>
+</head>
+
+<body>
+    <h1>Legi-Scanner</h1>
+    <video id="camera" width="1920" height="1080" autoplay></video>
+    <button id="ScanButton" onclick="StartScan()">Scan</button>
+    <button id="StopButton" onclick="StopScan()">Stop</button>
+    <!-- <form id="uploadForm" enctype="multipart/form-data">
+        <label for="fileInput">Select an image with barcode:</label>
+        <input type="file" id="fileInput" name="file" accept="image/*">
+        <button id="snapshotBtn">Take Snapshot</button>
+        <button type="button" onclick="uploadFile()">Check</button>
+    </form> -->
+    <div id="result"></div>
+    <div id="inCSV"></div>
+    <img id="previewImage"></img>
+    <div id="debugstats"></div>
+    <canvas id="canvas"></canvas>
+</body>
+
+<!-- <script src="/serratus-quaggaJS-862df88/dist/quagga.min.js"></script> -->
+
+<script src="{{ url_for('static', filename='/serratus-quaggaJS-862df88/dist/quagga.min.js') }}"
+    type="text/javascript"></script>
+
+<script>
+    resultDiv = document.getElementById('result');
+    var resultdata;
+    const detectedBarcodeCallback = function (data) {
+        console.log('Barcode detected!');
+        console.log(data);
+        resultdata = data;
+        resultDiv.innerHTML = data["codeResult"]["code"];
+        Quagga.stop();
+    };
+
+    const onProcessedCallback = function (data) {
+        console.log('Frame processed!');
+        console.log(data);
+    };
+
+    const video = document.getElementById('camera');
+
+
+    debugstatsDiv = document.getElementById('debugstats');
+    //debugstatsDiv.innerHTML = 'ubs';
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+            //debugstatsDiv.innerHTML = 'stream';
+        })
+        .catch((error) => {
+            console.error('Error accessing camera:', error);
+            debugstatsDiv.innerHTML = 'Error';
+        });
+
+    function StartScan() {
+        resultDiv.innerHTML = 'Scanning';
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#camera')    // Or '#yourElement' (optional)
+            },
+            decoder: {
+                readers: ["code_39_reader"]
+            }
+        }, function (err) {
+            if (err) {
+                console.log(err);
+                return
+            }
+            console.log("Initialization finished. Ready to start");
+            Quagga.start();
+            Quagga.onDetected(detectedBarcodeCallback);
+            Quagga.onProcessed(onProcessedCallback);
+        });
+    };
+
+    function StopScan() {
+        resultDiv.innerHTML = 'Scanning stopped';
+        Quagga.stop();
+    };
+</script>
+
+<!-- <script>
+    function dataURLtoFile(dataURL, filename) {
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+
+        return new File([u8arr], filename, { type: mime });
+    }
+
+    // Function to take a snapshot
+    function takeSnapshot(event) {
+        event.preventDefault();
+
+        const video = document.getElementById('camera');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        // Draw the current frame of the video onto the canvas
+        canvas.width = 1920;
+        canvas.height = 1080;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Convert the canvas content to a data URL
+        const snapshotDataUrl = canvas.toDataURL('snapshot/png');
+
+        // You can now use snapshotDataUrl as the source for an image, save it, or send it to a server
+        console.log('Snapshot taken:', snapshotDataUrl);
+        //console.log('Snapshot taken:', snapshotDataUrl);
+
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+        const inCSVDiv = document.getElementById('inCSV')
+
+        const selectedImage = snapshotDataUrl;
+        const filename = 'screenshot.png';
+
+        // Convert data URL to File object
+        const imageFile = dataURLtoFile(selectedImage, filename);
+
+        // convert snapshot.png to a File object
+
+
+        // Display the selected image
+        //displayImage(selectedImage);
+
+        const formData = new FormData(form);
+        //console.log(selectedImage);
+        console.log("image file from screenshot", imageFile);
+        formData.append('image', imageFile);
+
+        fetch('/camera', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.error) {
+                    resultDiv.innerHTML = `Error: ${data.error}`;
+                } else {
+                    resultDiv.innerHTML = `Barcode: ${data.result}`;
+                    inCSVDiv.innerHTML = `in CSV: ${data.inCSV}`;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            });
+    }
+
+    // Attach the takeSnapshot function to the button click event
+    const snapshotBtn = document.getElementById('snapshotBtn');
+    snapshotBtn.addEventListener('click', takeSnapshot);
+
+    debugstatsDiv = document.getElementById('debugstats')
+    // Get the video element and set up the camera stream
+    const video = document.getElementById('camera');
+
+    debugstatsDiv.innerHTML = 'ubs';
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+            debugstatsDiv.innerHTML = 'stream';
+        })
+        .catch((error) => {
+            console.error('Error accessing camera:', error);
+            debugstatsDiv.innerHTML = 'Error';
+        });
+
+    function uploadFile() {
+        const form = document.getElementById('uploadForm');
+        const resultDiv = document.getElementById('result');
+        const inCSVDiv = document.getElementById('inCSV')
+
+        const fileInput = document.getElementById('fileInput');
+
+        const selectedImage = fileInput.files[0];
+        console.log("fileinput.files: ", fileInput.files);
+        // Display the selected image
+        //displayImage(selectedImage);
+
+        const formData = new FormData(form);
+        //console.log(selectedImage);
+        //formData.append('image', selectedImage);
+
+        console.log('selected image: ', selectedImage);
+        console.log('formData for upload: ', formData);
+
+        // Sending image to the server using POST request
+        console.log("formdata", formData);
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        }) // Handle the response to the POST request (barcode scanner)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.error) {
+                    resultDiv.innerHTML = `Error: ${data.error}`;
+                } else {
+                    resultDiv.innerHTML = `Barcode: ${data.result}`;
+                    inCSVDiv.innerHTML = `in CSV: ${data.inCSV}`;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            });
+    }
+
+    function displayImage(image) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            // Set the source of the previewImage to the data URL
+            previewImage.src = e.target.result;
+        };
+
+        // Read the selected image as a data URL
+        reader.readAsDataURL(image);
+    }
+</script> -->
+
+</html>
