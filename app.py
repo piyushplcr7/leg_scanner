@@ -145,8 +145,8 @@ def leginr():
 if __name__ == "__main__":
     # app.run(debug=True, ssl_context=('cert.pem', 'priv_key.pem'))
     # app.run(debug=True)
-    # app.run(debug=True, host='0.0.0.0', port=5000)
+    #app.run(debug=True, host='0.0.0.0', port=5000)
     """ app.run(debug=True, host='0.0.0.0', port=5000,
             ssl_context=('server.crt', 'server.key')) """
-    app.run(debug=True, host='0.0.0.0', port=5000,
+    app.run(debug=True, host='0.0.0.0', port=8080,
             ssl_context=('server.crt', 'server.key'))
