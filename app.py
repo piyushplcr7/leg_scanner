@@ -9,7 +9,7 @@ app = Flask(__name__)
 sslify = SSLify(app)
 
 
-def process_image(imginput):
+""" def process_image(imginput):
     # img = cv2.imread('myimage.png')
     img = cv2.imread(imginput)
     results = zxingcpp.read_barcodes(img)
@@ -31,7 +31,7 @@ def search_str(file_path, word):
             return True
         else:
             print('string does not exist in a file')
-            return False
+            return False """
 
 
 @app.route("/")
@@ -40,7 +40,7 @@ def homepage():
     return render_template('index.html', var=var)
 
 
-@app.route('/upload', methods=['POST'])
+""" @app.route('/upload', methods=['POST'])
 def upload():
     print("POST request at /upload, received = > ", request.files)
     if 'file' not in request.files:
@@ -88,6 +88,7 @@ def camera():
         return jsonify({'result': result, 'inCSV': inCSV})
     except Exception as e:
         return jsonify({'error': str(e)})
+ """
 
 
 @app.route('/leginr', methods=['POST'])
@@ -135,12 +136,6 @@ def leginr():
     print(response_data)
 
     return jsonify(response_data)
-
-    """ except Exception as e:
-        # Handle any errors that might occur during decoding or processing
-        error_message = str(e)
-        return jsonify({'error': error_message}), 500 """
-
 
 if __name__ == "__main__":
     # app.run(debug=True, ssl_context=('cert.pem', 'priv_key.pem'))
