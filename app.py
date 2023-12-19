@@ -177,6 +177,7 @@ def leginr():
             if row['student_id'] == decoded_barcode:
                 first_name = row['first_name']
                 last_name = row['last_name']
+                row['present'] = 'yes'
                 print(f"First Name: {first_name}, Last Name: {last_name}")
                 found = True
                 break
