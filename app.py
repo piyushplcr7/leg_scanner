@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask import render_template
+from flask import render_template, redirect, url_for
 import cv2
 import zxingcpp
 import csv
@@ -37,7 +37,25 @@ def search_str(file_path, word):
 @app.route("/")
 def homepage():
     var = "poos"
-    return render_template('index.html', var=var)
+    message = request.args.get('message')
+    return render_template('index.html', var=var, message=message)
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    print("POST request at /upload, received = > ", request.files)
+    if 'csvFile' not in request.files:
+        return 'No file part'
+    
+    file = request.files['csvFile']
+
+    if file.filename == '':
+        return 'No selected file'
+
+    # Process the uploaded file as needed
+    # For example, you can save it to a specific directory
+    file.save('uploads/' + file.filename)
+
+    return redirect(url_for('homepage',message='File uploaded successfully'))
 
 
 """ @app.route('/upload', methods=['POST'])
@@ -90,6 +108,52 @@ def camera():
         return jsonify({'error': str(e)})
  """
 
+""" @app.route('/leginr', methods=['POST'])
+def leginr():
+    print("POST request received")
+    # try:
+    # Decode JSON data from the request body
+    data = request.json
+
+    # Assuming data contains a key named 'decodedBarcode'
+    decoded_barcode = data.get('legi_nr')
+
+    decoded_barcode = decoded_barcode[1:]
+
+    print('decoded_barcode = ', decoded_barcode)
+
+    found = False
+    # Read the CSV file and find the corresponding names
+    with open('upload/students.csv', mode='r') as file:
+        csv_reader = csv.DictReader(file)
+        for row in csv_reader:
+            if row['student_id'] == decoded_barcode:
+                first_name = row['first_name']
+                last_name = row['last_name']
+                print(f"First Name: {first_name}, Last Name: {last_name}")
+                found = True
+                break
+        else:
+            print(f"Student ID {decoded_barcode} not found.")
+
+    # Response
+    if found:
+        response_data = {
+            'result': 'found',
+            'first_name': first_name,
+            'last_name': last_name
+        }
+    else:
+        response_data = {
+            'result': 'not_found',
+            'first_name': 'null',
+            'last_name': 'null'
+        }
+
+    print(response_data)
+
+    return jsonify(response_data) """
+
 
 @app.route('/leginr', methods=['POST'])
 def leginr():
@@ -107,7 +171,7 @@ def leginr():
 
     found = False
     # Read the CSV file and find the corresponding names
-    with open('students.csv', mode='r') as file:
+    with open('uploads/students.csv', mode='r') as file:
         csv_reader = csv.DictReader(file)
         for row in csv_reader:
             if row['student_id'] == decoded_barcode:
