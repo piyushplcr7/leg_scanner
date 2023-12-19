@@ -150,7 +150,7 @@
         console.log('Barcode detected!');
         console.log(data);
         var decodedBarcode = data["codeResult"]["code"];
-        barcodeDiv.innerHTML = "Barcode found: " + decodedBarcode;
+        barcodeDiv.innerHTML = "Barcode found! Scanning paused";
         leginrbox.innerHTML = decodedBarcode;
         Quagga.stop();
 

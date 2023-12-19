@@ -182,7 +182,7 @@ def leginr():
                 found = True
                 break
         else:
-            print(f"Student ID {decoded_barcode} not found.")
+            print(f"Student ID {decoded_barcode} not found in CSV.")
 
     # Response
     if found:
