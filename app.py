@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, send_file
 import cv2
 import zxingcpp
 import csv
@@ -38,14 +38,18 @@ def search_str(file_path, word):
 def homepage():
     var = "poos"
     message = request.args.get('message')
+    if message == None:
+        message = ''
+
     return render_template('index.html', var=var, message=message)
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
     print("POST request at /upload, received = > ", request.files)
     if 'csvFile' not in request.files:
         return 'No file part'
-    
+
     file = request.files['csvFile']
 
     if file.filename == '':
@@ -55,7 +59,7 @@ def upload():
     # For example, you can save it to a specific directory
     file.save('uploads/' + file.filename)
 
-    return redirect(url_for('homepage',message='File uploaded successfully'))
+    return redirect(url_for('homepage', message='File uploaded successfully'))
 
 
 """ @app.route('/upload', methods=['POST'])
@@ -165,15 +169,16 @@ def leginr():
     # Assuming data contains a key named 'decodedBarcode'
     decoded_barcode = data.get('legi_nr')
 
-    decoded_barcode = decoded_barcode[1:]
+    decoded_barcode = decoded_barcode[-8:]
 
     print('decoded_barcode = ', decoded_barcode)
 
     found = False
     # Read the CSV file and find the corresponding names
     with open('uploads/students.csv', mode='r') as file:
-        csv_reader = csv.DictReader(file)
-        for row in csv_reader:
+        rows = list(csv.DictReader(file))
+
+        for row in rows:
             if row['student_id'] == decoded_barcode:
                 first_name = row['first_name']
                 last_name = row['last_name']
@@ -183,6 +188,18 @@ def leginr():
                 break
         else:
             print(f"Student ID {decoded_barcode} not found.")
+
+    # Writing the changes back to the CSV file
+    if found:
+        with open('uploads/students.csv', mode='w', newline='') as file:
+            fieldnames = ['student_id', 'first_name', 'last_name', 'present']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+            # Writing the header
+            writer.writeheader()
+
+            # Writing the modified rows
+            writer.writerows(rows)
 
     # Response
     if found:
@@ -202,10 +219,20 @@ def leginr():
 
     return jsonify(response_data)
 
+
+@app.route('/download')
+def download_file():
+    # Specify the file path you want to allow users to download
+    file_path = 'uploads/students.csv'
+
+    # Use Flask's send_file function to send the file as a response
+    return send_file(file_path, as_attachment=True)
+
+
 if __name__ == "__main__":
     # app.run(debug=True, ssl_context=('cert.pem', 'priv_key.pem'))
     # app.run(debug=True)
-    #app.run(debug=True, host='0.0.0.0', port=5000)
+    # app.run(debug=True, host='0.0.0.0', port=5000)
     """ app.run(debug=True, host='0.0.0.0', port=5000,
             ssl_context=('server.crt', 'server.key')) """
     app.run(debug=True, host='0.0.0.0', port=8080,

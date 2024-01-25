@@ -15,6 +15,68 @@
         object-position: center top;
     }
 
+    .form-container-top {
+        max-width: 400px;
+        margin: 10px auto 0;
+        /* Add space at the top, no space at the bottom, and center horizontally */
+        padding: 10px;
+        /* border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
+    }
+
+    .form-container-bot {
+        max-width: 400px;
+        margin: 10px auto 0;
+        /* Add space at the top, no space at the bottom, and center horizontally */
+        padding: 10px;
+        /* border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
+    }
+
+
+    /* Style for form labels */
+    label {
+        display: block;
+        /* Display labels as block elements */
+        margin-bottom: 10px;
+        /* Add space below each label */
+    }
+
+    /* Style for text input */
+    input[type="text"] {
+        width: 92%;
+        /* Make the text input take up the full width */
+        padding: 10px;
+        /* Add padding */
+        margin-bottom: 15px;
+        /* Add space below the text input */
+        border: 1px solid #ccc;
+        /* Add a border */
+        border-radius: 4px;
+        /* Add rounded corners */
+    }
+
+    /* Style for submit button */
+    input[type="submit"] {
+        width: 100%;
+        /* Make the button take up the full width */
+        padding: 10px;
+        /* Add padding */
+        background-color: darkblue;
+        /* Set the background color */
+        color: #fff;
+        /* Set the text color */
+        border: none;
+        /* Remove the border */
+        border-radius: 4px;
+        /* Add rounded corners */
+        cursor: pointer;
+        /* Add a pointer cursor */
+    }
+
+
     #result,
     #scannedBarcode {
         width: 80vw;
@@ -49,6 +111,7 @@
         font-size: 16px;
         border: none;
         cursor: pointer;
+        border-radius: 4px;
         margin: 10px;
     }
 
@@ -72,35 +135,31 @@
 </style>
 
 <body>
-    <h1>Legi-Scanner</h1>
-    <!-- <video id="camera" width="1920" height="1080" autoplay></video> -->
-    <video id="camera" width="100%" height="100%" autoplay playsinline></video>
-    <div id="buttonContainer">
-        <button id="ScanButton" onclick="StartScan()">Scan</button>
-        <button id="StopButton" onclick="StopScan()">Stop</button>
-    </div>
-    <!-- <form id="uploadForm" enctype="multipart/form-data">
-        <label for="fileInput">Select an image with barcode:</label>
-        <input type="file" id="fileInput" name="file" accept="image/*">
-        <button id="snapshotBtn">Take Snapshot</button>
-        <button type="button" onclick="uploadFile()">Check</button>
-    </form> -->
+    <!-- <h1>Legi-Scanner</h1> -->
     <div>{{ message }}</div>
-    <form id="csvUploadForm" action="/upload" method="post" enctype="multipart/form-data">
-        <label for="csvFile">Select CSV file:</label>
+    <form class="form-container-top" id="csvUploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <label for="csvFile">Student list:</label>
         <input type="file" name="csvFile" id="csvFile" accept=".csv">
         <input type="submit" value="Upload">
     </form>
-    <form id="leginrUploadForm" action="/leginr" method="post" enctype="multipart/form-data">
-        <label for="leginrbox">Scan/enter legi No.</label>
+
+    <video id="camera" width="100%" height="100%" autoplay playsinline></video>
+    <div id="buttonContainer">
+        <button id="ScanButton" onclick="StartScan()">Scan</button>
+        <button id="StopButton" onclick="StopScan()">Reset</button>
+    </div>
+
+    <form class="form-container-bot" id="leginrUploadForm" action="/leginr" method="post" enctype="multipart/form-data">
+        <label for="leginrbox"></label>
         <input type="text" id="leginrbox" name="leginrbox">
-        <input type="submit" value="Check Legi No.">
+        <input type="submit" value="Manual check">
     </form>
     <div id="infoContainer">
         <div id="scannedBarcode"></div>
         <div id="result"></div>
         <div id="debugstats"></div>
     </div>
+    <a href="/download">Download File</a>
 
     <!-- <div id="inCSV"></div>
     <img id="previewImage"></img>
@@ -114,6 +173,7 @@
 
 <script>
     const leginrbox = document.getElementById('leginrbox');
+    leginrbox.value = "A12345678";
     const debugstatsDiv = document.getElementById('debugstats');
     const resultDiv = document.getElementById('result');
     const barcodeDiv = document.getElementById('scannedBarcode');
@@ -134,10 +194,10 @@
             .then(data => {
                 if (data['result'] == 'found') {
                     console.log(data);
-                    resultDiv.innerHTML = "Student found: " + data['first_name'] + " " + data['last_name'];
+                    resultDiv.innerHTML = data['first_name'] + " " + data['last_name'];
                 }
                 else {
-                    resultDiv.innerHTML = "Student not found, try manually entering the legi No.";
+                    resultDiv.innerHTML = "ID not found";
                 }
 
             })
@@ -150,8 +210,9 @@
         console.log('Barcode detected!');
         console.log(data);
         var decodedBarcode = data["codeResult"]["code"];
-        barcodeDiv.innerHTML = "Barcode found: " + decodedBarcode;
-        leginrbox.innerHTML = decodedBarcode;
+        //barcodeDiv.innerHTML = "Barcode found: " + decodedBarcode;
+        barcodeDiv.innerHTML = "Barcode detected";
+        leginrbox.value = decodedBarcode;
         Quagga.stop();
 
         //debugstatsDiv.innerHTML = decodedBarcode;
@@ -160,7 +221,7 @@
 
     leginrUploadFormDiv.addEventListener('submit', function (event) {
         event.preventDefault();
-        console.log(leginrbox.value);
+        barcodeDiv.innerHTML = "";
         sendPostToLegiNr(leginrbox.value)
     });
 
@@ -226,156 +287,10 @@
 
     function StopScan() {
         resultDiv.innerHTML = '';
-        barcodeDiv.innerHTML = 'Scanning stopped';
+        barcodeDiv.innerHTML = '';
+        leginrbox.value = "A12345678";
         Quagga.stop();
     };
 </script>
-
-<!-- <script>
-    function dataURLtoFile(dataURL, filename) {
-        const arr = dataURL.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-
-        while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-
-        return new File([u8arr], filename, { type: mime });
-    }
-
-    // Function to take a snapshot
-    function takeSnapshot(event) {
-        event.preventDefault();
-
-        const video = document.getElementById('camera');
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
-
-        // Draw the current frame of the video onto the canvas
-        canvas.width = 1920;
-        canvas.height = 1080;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // Convert the canvas content to a data URL
-        const snapshotDataUrl = canvas.toDataURL('snapshot/png');
-
-        // You can now use snapshotDataUrl as the source for an image, save it, or send it to a server
-        console.log('Snapshot taken:', snapshotDataUrl);
-        //console.log('Snapshot taken:', snapshotDataUrl);
-
-        const form = document.getElementById('uploadForm');
-        const resultDiv = document.getElementById('result');
-        const inCSVDiv = document.getElementById('inCSV')
-
-        const selectedImage = snapshotDataUrl;
-        const filename = 'screenshot.png';
-
-        // Convert data URL to File object
-        const imageFile = dataURLtoFile(selectedImage, filename);
-
-        // convert snapshot.png to a File object
-
-
-        // Display the selected image
-        //displayImage(selectedImage);
-
-        const formData = new FormData(form);
-        //console.log(selectedImage);
-        console.log("image file from screenshot", imageFile);
-        formData.append('image', imageFile);
-
-        fetch('/camera', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.error) {
-                    resultDiv.innerHTML = `Error: ${data.error}`;
-                } else {
-                    resultDiv.innerHTML = `Barcode: ${data.result}`;
-                    inCSVDiv.innerHTML = `in CSV: ${data.inCSV}`;
-                }
-            })
-            .catch(error => {
-                resultDiv.innerHTML = `Error: ${error.message}`;
-            });
-    }
-
-    // Attach the takeSnapshot function to the button click event
-    const snapshotBtn = document.getElementById('snapshotBtn');
-    snapshotBtn.addEventListener('click', takeSnapshot);
-
-    debugstatsDiv = document.getElementById('debugstats')
-    // Get the video element and set up the camera stream
-    const video = document.getElementById('camera');
-
-    debugstatsDiv.innerHTML = 'ubs';
-
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
-            debugstatsDiv.innerHTML = 'stream';
-        })
-        .catch((error) => {
-            console.error('Error accessing camera:', error);
-            debugstatsDiv.innerHTML = 'Error';
-        });
-
-    function uploadFile() {
-        const form = document.getElementById('uploadForm');
-        const resultDiv = document.getElementById('result');
-        const inCSVDiv = document.getElementById('inCSV')
-
-        const fileInput = document.getElementById('fileInput');
-
-        const selectedImage = fileInput.files[0];
-        console.log("fileinput.files: ", fileInput.files);
-        // Display the selected image
-        //displayImage(selectedImage);
-
-        const formData = new FormData(form);
-        //console.log(selectedImage);
-        //formData.append('image', selectedImage);
-
-        console.log('selected image: ', selectedImage);
-        console.log('formData for upload: ', formData);
-
-        // Sending image to the server using POST request
-        console.log("formdata", formData);
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        }) // Handle the response to the POST request (barcode scanner)
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.error) {
-                    resultDiv.innerHTML = `Error: ${data.error}`;
-                } else {
-                    resultDiv.innerHTML = `Barcode: ${data.result}`;
-                    inCSVDiv.innerHTML = `in CSV: ${data.inCSV}`;
-                }
-            })
-            .catch(error => {
-                resultDiv.innerHTML = `Error: ${error.message}`;
-            });
-    }
-
-    function displayImage(image) {
-        const reader = new FileReader();
-
-        reader.onload = function (e) {
-            // Set the source of the previewImage to the data URL
-            previewImage.src = e.target.result;
-        };
-
-        // Read the selected image as a data URL
-        reader.readAsDataURL(image);
-    }
-</script> -->
 
 </html>
