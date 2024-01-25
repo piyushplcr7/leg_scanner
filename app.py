@@ -187,7 +187,7 @@ def leginr():
                 found = True
                 break
         else:
-            print(f"Student ID {decoded_barcode} not found.")
+            print(f"Student ID {decoded_barcode} not found in CSV.")
 
     # Writing the changes back to the CSV file
     if found:
